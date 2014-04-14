@@ -15,7 +15,7 @@ import (
 // MsgHandler handles messages and optionally sends responses on chan send.
 type Handler interface {
 	Accept(msg *Msg) bool
-	Handle(msg *Msg, send chan *Msg)
+	Handle(msg *Msg, send chan<- *Msg)
 }
 
 // Client is an IRC connection which handles message dispatch to a MsgHandler.
