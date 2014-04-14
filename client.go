@@ -1,0 +1,83 @@
+/*
+   Package irc provides a framework for writing IRC clients, specifically bots.
+*/
+package irc
+
+import (
+	"bufio"
+	"fmt"
+	"io"
+	"log"
+	"net"
+	"net/textproto"
+)
+
+// MsgHandler handles messages and optionally sends responses on chan send.
+type Handler interface {
+	Accept(msg *Msg) bool
+	Handle(msg *Msg, send chan *Msg)
+}
+
+// Client is an IRC connection which handles message dispatch to a MsgHandler.
+type Client struct {
+	conn     io.ReadWriteCloser
+	send     chan *Msg
+	recv     chan *Msg
+	handlers []Handler
+}
+
+// Dial connects to an IRC host.
+func Dial(address string) (*Client, error) {
+	conn, err := net.Dial("tcp", address)
+	if err != nil {
+		return nil, err
+	}
+	client := Client{
+		conn:     conn,
+		send:     make(chan *Msg, 5),
+		recv:     make(chan *Msg, 5),
+		handlers: make([]Handler, 0),
+	}
+	return &client, nil
+}
+
+// Register registers a handler for dispatch.
+func (client *Client) Register(handler Handler) {
+	client.handlers = append(client.handlers, handler)
+}
+
+// Listen puts an irc connection into a loop, parsing and dispatching recieved
+// messages to a handler, as well as sending outgoing messages.
+func (client *Client) Listen() {
+	go func() {
+		reader := textproto.NewReader(bufio.NewReader(client.conn))
+		for {
+			line, err := reader.ReadLine()
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			msg, err := ParseMsg(line)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			client.recv <- msg
+		}
+	}()
+	//writer := textproto.NewWriter(bufio.NewWriter(client.conn))
+	for {
+		select {
+		case msg := <-client.recv:
+			fmt.Printf("[log:recv] %v\n", msg)
+			for _, handler := range client.handlers {
+				if handler.Accept(msg) {
+					go handler.Handle(msg, client.send)
+				}
+			}
+		case msg := <-client.send:
+			fmt.Printf("[log:send] %v\n", msg)
+			//writer.PrintfLine("%v", msg
+		}
+	}
+}
