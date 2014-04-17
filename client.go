@@ -14,7 +14,7 @@ import (
 
 // MsgHandler handles messages and optionally sends responses on chan send.
 type Handler interface {
-	Accept(msg *Msg) bool
+	Accepts(msg *Msg) bool
 	Handle(msg *Msg, send chan<- *Msg)
 }
 
@@ -50,7 +50,6 @@ func (client *Client) Register(handler Handler) {
 	client.handlers = append(client.handlers, handler)
 }
 
-//
 func (client *Client) Nick(user string) {
 	client.writer.PrintfLine("NICK %v", user)
 	client.writer.PrintfLine("USER %v %v %v :%v", user)
@@ -83,7 +82,7 @@ func (client *Client) Listen() {
 		case msg := <-client.recv:
 			fmt.Printf("[log:recv] %v\n", msg)
 			for _, handler := range client.handlers {
-				if handler.Accept(msg) {
+				if handler.Accepts(msg) {
 					go handler.Handle(msg, client.send)
 				}
 			}
