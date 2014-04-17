@@ -68,3 +68,14 @@ func ParseMsg(raw string) (*Msg, error) {
 	}
 	return msg, nil
 }
+
+// ExtractPrivmsg attempts to extract the relevant parts of a privmessage.
+func (msg Msg) ExtractPrivmsg() (source string, body string, err error) {
+	if msg.Cmd == "PRIVMSG" && len(msg.Params) == 2 {
+		source = msg.Params[0]
+		body = msg.Params[1]
+	} else {
+		err = errors.New("Malformed PRIVMSG")
+	}
+	return
+}
