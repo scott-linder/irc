@@ -20,7 +20,7 @@ type Msg struct {
 }
 
 // paramsString formats the parameter list, handling the trailing edge case.
-func (msg Msg) paramsString() (str string) {
+func (msg *Msg) paramsString() (str string) {
 	for i, param := range msg.Params {
 		if i == len(msg.Params)-1 {
 			// Edge case for trailing (last) parameter.
@@ -70,12 +70,22 @@ func ParseMsg(raw string) (*Msg, error) {
 }
 
 // ExtractPrivmsg attempts to extract the relevant parts of a privmessage.
-func (msg Msg) ExtractPrivmsg() (source string, body string, err error) {
+func (msg *Msg) ExtractPrivmsg() (source string, body string, err error) {
 	if msg.Cmd == "PRIVMSG" && len(msg.Params) == 2 {
 		source = msg.Params[0]
 		body = msg.Params[1]
 	} else {
 		err = errors.New("Malformed PRIVMSG")
+	}
+	return
+}
+
+// ExtractNick attempts to extract the sender nick from the message prefix.
+func (msg *Msg) ExtractNick() (nick string, err error) {
+	if strings.Contains(msg.Prefix, "!") && msg.Prefix != "" {
+		nick = strings.Split(msg.Prefix, "!")[0]
+	} else {
+		err = errors.New("Unable to extract nick from prefix.")
 	}
 	return
 }
