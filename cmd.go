@@ -1,15 +1,11 @@
 package irc
 
 import (
+	"io"
 	"log"
 	"strings"
 	"sync"
 )
-
-// The CmdResponseWriter interface sends an IRC message for a Cmd.
-type CmdResponseWriter interface {
-	Write(p []byte) (int, error)
-}
 
 // cmdResponseWriter is a simple writer that abstracts away the Msg struct.
 type cmdResponseWriter struct {
@@ -25,11 +21,11 @@ func (w cmdResponseWriter) Write(p []byte) (int, error) {
 
 // The Cmd interface responds to incoming chat commands.
 type Cmd interface {
-	Respond(body, source string, w CmdResponseWriter)
+	Respond(body, source string, w io.Writer)
 }
 
 // A CmdFunc responds to incoming chat commands.
-type CmdFunc func(body, source string, w CmdResponseWriter)
+type CmdFunc func(body, source string, w io.Writer)
 
 // Shim struct to allow users who don't need state to more easily register a
 // CmdFunc while not modifying our handling code.
@@ -38,7 +34,7 @@ type cmd struct {
 }
 
 // Respond on our shim just passes through to the user func.
-func (c cmd) Respond(body, source string, w CmdResponseWriter) {
+func (c cmd) Respond(body, source string, w io.Writer) {
 	c.cmdFunc(body, source, w)
 }
 
