@@ -91,6 +91,15 @@ func (cmdHandler *CmdHandler) Handle(msg *Msg, send chan<- *Msg) {
 	}
 }
 
+func (cmdHandler *CmdHandler) RegisteredNames() (names []string) {
+	cmdHandler.cmdsMtx.Lock()
+	defer cmdHandler.cmdsMtx.Unlock()
+	for name := range cmdHandler.cmds {
+		names = append(names, name)
+	}
+	return
+}
+
 // Register adds a Cmd to be executed when the given name is matched.
 func (cmdHandler *CmdHandler) Register(name string, cmd Cmd) {
 	cmdHandler.cmdsMtx.Lock()
