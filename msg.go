@@ -68,3 +68,24 @@ func ParseMsg(raw string) (*Msg, error) {
 	}
 	return msg, nil
 }
+
+// ExtractPrivmsg attempts to extract the relevant parts of a privmessage.
+func (msg *Msg) ExtractPrivmsg() (receiver string, body string, err error) {
+	if msg.Cmd == "PRIVMSG" && len(msg.Params) == 2 {
+		receiver = msg.Params[0]
+		body = msg.Params[1]
+	} else {
+		err = errors.New("Malformed PRIVMSG")
+	}
+	return
+}
+
+// ExtractNick attempts to extract the sender nick from the message prefix.
+func (msg *Msg) ExtractNick() (nick string, err error) {
+	if strings.Contains(msg.Prefix, "!") && msg.Prefix != "" {
+		nick = strings.Split(msg.Prefix, "!")[0]
+	} else {
+		err = errors.New("Unable to extract nick from prefix.")
+	}
+	return
+}

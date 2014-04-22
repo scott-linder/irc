@@ -1,6 +1,7 @@
 package irc
 
 import (
+	"log"
 	"strings"
 	"sync"
 )
@@ -64,16 +65,23 @@ func (cmdHandler *CmdHandler) Accepts(msg *Msg) bool {
 // Handle for a CmdHandler extracts the relevant parts of a command msg and
 // dispatches to a Cmd, if one is found with the given name.
 func (cmdHandler *CmdHandler) Handle(msg *Msg, send chan<- *Msg) {
-	receiver := msg.Params[0]
-	nameAndBody := strings.SplitN(msg.Params[1], " ", 2)
+	receiver, body, err := msg.ExtractPrivmsg()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	nameAndBody := strings.SplitN(body, " ", 2)
 	name := strings.TrimPrefix(nameAndBody[0], cmdHandler.prefix)
-	var body string
 	if len(nameAndBody) > 1 {
 		body = nameAndBody[1]
 	} else {
 		body = ""
 	}
-	source := strings.Split(msg.Prefix, "!")[0]
+	source, err := msg.ExtractNick()
+	if err != nil {
+		log.Println(err)
+		return
+	}
 	cmdHandler.cmdsMtx.Lock()
 	ccmd, ok := cmdHandler.cmds[name]
 	cmdHandler.cmdsMtx.Unlock()
