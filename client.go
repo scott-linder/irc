@@ -46,7 +46,7 @@ func Dial(address string) (*Client, error) {
 }
 
 // Register registers a handler for dispatch.
-func (client *Client) Register(handler Handler) {
+func (client *Client) Handle(handler Handler) {
 	client.handlers = append(client.handlers, handler)
 }
 
