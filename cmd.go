@@ -27,15 +27,8 @@ type Cmd interface {
 // A CmdFunc responds to incoming chat commands.
 type CmdFunc func(body, source string, w io.Writer)
 
-// Shim struct to allow users who don't need state to more easily register a
-// CmdFunc while not modifying our handling code.
-type cmd struct {
-	cmdFunc CmdFunc
-}
-
-// Respond on our shim just passes through to the user func.
-func (c cmd) Respond(body, source string, w io.Writer) {
-	c.cmdFunc(body, source, w)
+func (f CmdFunc) Respond(body, source string, w io.Writer) {
+	f(body, source, w)
 }
 
 // A CmdHandler dispatches for a group of commands with a common prefix.
@@ -105,5 +98,5 @@ func (cmdHandler *CmdHandler) Register(name string, cmd Cmd) {
 
 // RegisterFunc adds a CmdFunc to be executed when the given name is matched.
 func (cmdHandler *CmdHandler) RegisterFunc(name string, cmdFunc CmdFunc) {
-	cmdHandler.Register(name, cmd{cmdFunc: cmdFunc})
+	cmdHandler.Register(name, Cmd(cmdFunc))
 }
