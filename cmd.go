@@ -44,23 +44,23 @@ func NewCmdHandler(prefix string) *CmdHandler {
 }
 
 // Accepts for a CmdHandler ensures the msg contains a chat command.
-func (cmdHandler *CmdHandler) Accepts(msg *Msg) bool {
+func (c *CmdHandler) Accepts(msg *Msg) bool {
 	isPrivmsg := msg.Cmd == "PRIVMSG"
 	hasCmdPrefix := len(msg.Params) == 2 &&
-		strings.HasPrefix(msg.Params[1], cmdHandler.prefix)
+		strings.HasPrefix(msg.Params[1], c.prefix)
 	return isPrivmsg && hasCmdPrefix
 }
 
 // Handle for a CmdHandler extracts the relevant parts of a command msg and
 // dispatches to a Cmd, if one is found with the given name.
-func (cmdHandler *CmdHandler) Handle(msg *Msg, send chan<- *Msg) {
+func (c *CmdHandler) Handle(msg *Msg, send chan<- *Msg) {
 	receiver, body, err := msg.ExtractPrivmsg()
 	if err != nil {
 		log.Println(err)
 		return
 	}
 	nameAndBody := strings.SplitN(body, " ", 2)
-	name := strings.TrimPrefix(nameAndBody[0], cmdHandler.prefix)
+	name := strings.TrimPrefix(nameAndBody[0], c.prefix)
 	if len(nameAndBody) > 1 {
 		body = nameAndBody[1]
 	} else {
@@ -71,32 +71,32 @@ func (cmdHandler *CmdHandler) Handle(msg *Msg, send chan<- *Msg) {
 		log.Println(err)
 		return
 	}
-	cmdHandler.cmdsMtx.Lock()
-	ccmd, ok := cmdHandler.cmds[name]
-	cmdHandler.cmdsMtx.Unlock()
+	c.cmdsMtx.Lock()
+	ccmd, ok := c.cmds[name]
+	c.cmdsMtx.Unlock()
 	if ok {
 		go ccmd.Respond(body, source,
 			cmdResponseWriter{receiver: receiver, send: send})
 	}
 }
 
-func (cmdHandler *CmdHandler) RegisteredNames() (names []string) {
-	cmdHandler.cmdsMtx.Lock()
-	defer cmdHandler.cmdsMtx.Unlock()
-	for name := range cmdHandler.cmds {
+func (c *CmdHandler) RegisteredNames() (names []string) {
+	c.cmdsMtx.Lock()
+	defer c.cmdsMtx.Unlock()
+	for name := range c.cmds {
 		names = append(names, name)
 	}
 	return
 }
 
 // Register adds a Cmd to be executed when the given name is matched.
-func (cmdHandler *CmdHandler) Register(name string, cmd Cmd) {
-	cmdHandler.cmdsMtx.Lock()
-	defer cmdHandler.cmdsMtx.Unlock()
-	cmdHandler.cmds[name] = cmd
+func (c *CmdHandler) Register(name string, cmd Cmd) {
+	c.cmdsMtx.Lock()
+	defer c.cmdsMtx.Unlock()
+	c.cmds[name] = cmd
 }
 
 // RegisterFunc adds a CmdFunc to be executed when the given name is matched.
-func (cmdHandler *CmdHandler) RegisterFunc(name string, cmdFunc CmdFunc) {
-	cmdHandler.Register(name, Cmd(cmdFunc))
+func (c *CmdHandler) RegisterFunc(name string, cmdFunc CmdFunc) {
+	c.Register(name, Cmd(cmdFunc))
 }
